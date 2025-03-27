@@ -12,7 +12,7 @@
 		<RepositoryType>git</RepositoryType>
 		<RepositoryUrl>https://github.com/stianleroux/Serilog.Sinks.Dynatrace.Logs</RepositoryUrl>
 		<Authors>Stian Le Roux</Authors>
-		<Version>1.0.0</Version>
+		<Version>1.0.1</Version>
 	</PropertyGroup>
 
 	<ItemGroup>

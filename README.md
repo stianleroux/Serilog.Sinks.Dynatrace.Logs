@@ -70,18 +70,14 @@ Add to `appsettings.json` configuration:
 
 Inject and log:
 ```csharp
-public class HomeController : Controller
+public class HomeController(ILogger<HomeController> logger) : Controller
 {
-    private readonly ILogger _logger;
-
-    public HomeController(ILogger<HomeController> logger) { _logger = logger; }
-
     public IActionResult Index()
     {
-        _logger.LogInformation("Processed {@Position} in {Elapsed:000} ms.", new { Latitude = 25, Longitude = 134 }, 34);
+        this.logger.LogInformation("Processed {@Position} in {Elapsed:000} ms.", new { Latitude = 25, Longitude = 134 }, 34);
         return View();
     }
 }
 ```
 
-[![Nuget](https://img.shields.io/nuget/v/serilog.sinks.dynatrace.svg)](https://www.nuget.org/packages/Serilog.Sinks.Dynatrace/)
+[![Nuget](https://img.shields.io/nuget/v/serilog.sinks.dynatrace.logs.svg)](https://www.nuget.org/packages/Serilog.Sinks.Dynatrace.Logs/)
