@@ -1,10 +1,12 @@
-# Serilog.Sinks.Dynatrace #
+# Serilog.Sinks.Dynatrace.Logs #
 
-Serilog Sink that sends log events to Dynatrace https://www.dynatrace.com/
+Serilog Sink that sends Log to Dynatrace https://www.dynatrace.com/
 
-**Package** - [Serilog.Sinks.Dynatrace](http://nuget.org/packages/serilog.sinks.dynatrace) | **Platforms** - .NET 4.5, netstandard2.0
+**Package** - [Serilog.Sinks.Dynatrace.Logs](http://nuget.org/packages/serilog.sinks.dynatrace.logs) | **Platforms** - .NET 4.5, netstandard2.0
 
 ## Getting started
+
+Orginal Sink - https://github.com/iojancode/Serilog.Sinks.Dynatrace/
 
 Enable the sink and log:
 ```csharp

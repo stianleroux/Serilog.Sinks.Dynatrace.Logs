@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>netstandard2.0;net462</TargetFrameworks>
+		<Description>Serilog Sink that sends Logs to Dynatrace https://www.dynatrace.com/</Description>
+		<PackageId>Serilog.Sinks.Dynatrace.Logs</PackageId>
+		<PackageTags>dynatrace;serilog;sink;logging</PackageTags>
+		<PackageIconUrl>http://serilog.net/images/serilog-sink-nuget.png</PackageIconUrl>
+		<RepositoryUrl>https://github.com/iojancode/Serilog.Sinks.Dynatrace</RepositoryUrl>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryType>git</RepositoryType>
+		<RepositoryUrl>https://github.com/stianleroux/Serilog.Sinks.Dynatrace.Logs</RepositoryUrl>
+		<Authors>Stian Le Roux</Authors>
+		<Version>1.0.0</Version>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Serilog.Sinks.Http" Version="9.1.1" />
+		<PackageReference Include="Serilog" Version="4.2.0" />
+		<None Include="README.md" Pack="true" PackagePath="." />
+	</ItemGroup>
+
+</Project>

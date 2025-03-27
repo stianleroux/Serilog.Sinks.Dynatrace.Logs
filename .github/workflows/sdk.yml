@@ -1,0 +1,53 @@
+name: SDK
+
+on:
+    push:
+        branches:
+            - main
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checking out files
+              uses: actions/checkout@v2
+            - name: Setup .NET 8
+              uses: actions/setup-dotnet@v1
+              with:
+                  dotnet-version: 8.0.x
+            - name: Setup .NET 9
+              uses: actions/setup-dotnet@v1
+              with:
+                  dotnet-version: 9.0.x
+            - name: Restore dependencies
+              run: dotnet restore
+            - name: Build
+              run: dotnet build --no-restore
+            - name: Test
+              run: dotnet test --no-build --verbosity normal
+
+    publish:
+        name: build, pack & publish
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+            - uses: actions/setup-dotnet@v1
+              with:
+                  dotnet-version: 8.0.x
+            - name: Setup .NET 8
+              uses: actions/setup-dotnet@v1
+              with:
+                  dotnet-version: 8.0.x
+            - name: Setup .NET 9
+              uses: actions/setup-dotnet@v1
+              with:
+                  dotnet-version: 9.0.x
+            - name: Restore dependencies
+              run: dotnet restore
+            - name: Build
+              run: dotnet build --configuration Release
+            - name: Pack
+              run: dotnet pack Results/Results.csproj --output nuget-packages --configuration Release /p:Version=1.$(date +'%Y%m%d.%H%M%S')
+            - name: Push
+              run: dotnet nuget push **/*.nupkg --skip-duplicate --source https://api.nuget.org/v3/index.json --api-key ${{secrets.NUGET_API_KEY}}

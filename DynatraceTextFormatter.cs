@@ -11,7 +11,19 @@ namespace Serilog.Sinks.Dynatrace
 {
     class DynatraceTextFormatter : ITextFormatter
     {
-        private static readonly string[] ROOT_PROPERTIES = { "trace_id", "span_id" }; // OpenTelemetry
+        private static readonly string[] ROOT_PROPERTIES = { 
+            // Trace specifics
+            "trace_id",
+            "span_id",
+            "trace_sampled",
+
+            // Process specifics
+            "dt.entity.process_group_instance",
+
+            // Host specifics
+            "dt.entity.host",
+            "dt.host_group",
+            "dt.host_group.id"}; // OpenTelemetry
 
         private readonly string _applicationId;
         private readonly string _hostName;
@@ -59,10 +71,10 @@ namespace Serilog.Sinks.Dynatrace
             output.Write("\",\"host.name\":\"");
             output.Write(_hostName);
 
-            if (_environment != null) 
+            if (_environment != null)
             {
                 output.Write("\",\"environment\":\"");
-                output.Write(_environment);                
+                output.Write(_environment);
             }
 
             output.Write("\",\"content\":");
@@ -90,8 +102,8 @@ namespace Serilog.Sinks.Dynatrace
             foreach (var property in properties)
             {
                 var flatKey = prefixKey + property.Key;
-                if (ROOT_PROPERTIES.Contains(property.Key)) flatKey = property.Key; 
-                switch (property.Value) 
+                if (ROOT_PROPERTIES.Contains(property.Key)) flatKey = property.Key;
+                switch (property.Value)
                 {
                     case ScalarValue scalar:
                         output.Write(",");

@@ -4,6 +4,8 @@ using System.Net;
 using Serilog.Configuration;
 using Serilog.Events;
 using Serilog.Sinks.Dynatrace;
+using Serilog.Sinks.Dynatrace.Logs;
+using Serilog.Sinks.Http;
 
 namespace Serilog
 {
@@ -16,8 +18,8 @@ namespace Serilog
         /// <param name="ingestUrl">The endpoint for log ingestion, usually of the form "https://{instanceId}.live.dynatrace.com/api/v2/logs/ingest"</param>
         /// <param name="applicationId">Will be populated as application.id in all log entries</param>
         /// <param name="hostName">Will be populated as host.name in all log entries</param>
-        /// <param name="batchPostingLimit">Serilog http sink pass-through</param>
-        /// <param name="queueLimit">Serilog http sink pass-through</param>
+        /// <param name="batchSizeLimitBytes">Serilog http sink pass-through</param>
+        /// <param name="queueLimitBytes">Serilog http sink pass-through</param>
         /// <param name="period">Serilog http sink pass-through</param>
         /// <param name="restrictedToMinimumLevel">Serilog http sink pass-through</param>
         /// <param name="propertiesPrefix">A prefix for properties derived from the serilog log template arguments</param>
@@ -30,8 +32,8 @@ namespace Serilog
             string ingestUrl,
             string applicationId = null,
             string hostName = null,
-            int? batchPostingLimit = null,
-            int? queueLimit = null,
+            int? batchSizeLimitBytes = null,
+            int? queueLimitBytes = null,
             TimeSpan? period = null,
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
             string propertiesPrefix = "attr.",
@@ -49,8 +51,8 @@ namespace Serilog
                 Environment.GetEnvironmentVariable("ASPNET_ENVIRONMENT");
 
             return sinkConfiguration.Http(ingestUrl,
-                batchPostingLimit: batchPostingLimit ?? 50,
-                queueLimit: queueLimit ?? 100,
+                batchSizeLimitBytes: batchSizeLimitBytes ?? 50,
+                queueLimitBytes: queueLimitBytes ?? 100,
                 period: period ?? TimeSpan.FromSeconds(15),
                 textFormatter: new DynatraceTextFormatter(applicationId, hostName, envName, propertiesPrefix, customAttributes),
                 batchFormatter: new DynatraceBatchFormatter(),
@@ -65,8 +67,9 @@ namespace Serilog
         /// <param name="ingestUrl">The endpoint for log ingestion, usually of the form "https://{instanceId}.live.dynatrace.com/api/v2/logs/ingest"</param>
         /// <param name="applicationId">Will be populated as application.id in all log entries</param>
         /// <param name="hostName">Will be populated as host.name in all log entries</param>
-        /// <param name="batchPostingLimit">Serilog http sink pass-through</param>
-        /// <param name="bufferPathFormat">Serilog http sink pass-through</param>
+        /// <param name="batchSizeLimitBytes">Serilog http sink pass-through</param>
+        /// <param name="bufferBaseFileName">Serilog http sink pass-through</param>
+        /// <param name="bufferRollingInterval">Serilog http sink pass-through</param>
         /// <param name="period">Serilog http sink pass-through</param>
         /// <param name="restrictedToMinimumLevel">Serilog http sink pass-through</param>
         /// <param name="propertiesPrefix">A prefix for properties derived from the serilog log template arguments</param>
@@ -79,8 +82,9 @@ namespace Serilog
             string ingestUrl,
             string applicationId = null,
             string hostName = null,
-            int? batchPostingLimit = null,
-            string bufferPathFormat = "dynatrace-buffer-{Date}.json",
+            int? batchSizeLimitBytes = null,
+            string bufferBaseFileName = "dynatrace-buffer-.json",
+            BufferRollingInterval bufferRollingInterval = BufferRollingInterval.Day,
             TimeSpan? period = null,
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
             string propertiesPrefix = "attr.",
@@ -97,9 +101,11 @@ namespace Serilog
                 Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ??
                 Environment.GetEnvironmentVariable("ASPNET_ENVIRONMENT");
 
-            return sinkConfiguration.DurableHttp(ingestUrl,
-                bufferPathFormat: bufferPathFormat,
-                batchPostingLimit: batchPostingLimit ?? 50,
+            return sinkConfiguration.DurableHttpUsingTimeRolledBuffers(
+                ingestUrl,
+                batchSizeLimitBytes: batchSizeLimitBytes,
+                bufferBaseFileName: bufferBaseFileName,
+                bufferRollingInterval: bufferRollingInterval,
                 period: period ?? TimeSpan.FromSeconds(15),
                 textFormatter: new DynatraceTextFormatter(applicationId, hostName, envName, propertiesPrefix, customAttributes),
                 batchFormatter: new DynatraceBatchFormatter(),
