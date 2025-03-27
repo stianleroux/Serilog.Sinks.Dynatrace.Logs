@@ -49,6 +49,6 @@ jobs:
             - name: Build
               run: dotnet build --configuration Release
             - name: Pack
-              run: dotnet pack Serilog.Sinks.Dynatrace.Logs.csproj --output nuget-packages --configuration Release /p:Version=1.$(date +'%Y%m%d.%H%M%S')
+              run: dotnet pack Serilog.Sinks.Dynatrace.Logs.csproj --output nuget-packages --configuration Releas /p:Version=1.0.$(date +'%Y%m%d')+$(date +'%H%M%S')
             - name: Push
               run: dotnet nuget push **/*.nupkg --skip-duplicate --source https://api.nuget.org/v3/index.json --api-key ${{secrets.NUGET_API_KEY}}
