@@ -2,33 +2,37 @@ name: Build
 permissions:
   contents: read
   pull-requests: write
-  
+
 on:
-    push:
-        branches: [main]
-    workflow_dispatch:  
+  push:
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
-    build:
-        runs-on: ubuntu-latest
-        container:
-          image: mcr.microsoft.com/dotnet/sdk:8.0-alpine
+  build:
+    runs-on: ubuntu-latest
 
-        steps:
-            - uses: actions/checkout@v2
-            - name: Setup .NET 8
-              uses: actions/setup-dotnet@v1
-              with:
-                  dotnet-version: 8.0.x
-            - name: Setup .NET 9
-              uses: actions/setup-dotnet@v1
-              with:
-                  dotnet-version: 9.0.x
-            - name: Clean build
-              run: dotnet clean
-            - name: Restore dependencies
-              run: dotnet restore
-            - name: Build
-              run: dotnet build --no-restore
-            - name: Test
-              run: dotnet test --no-build --verbosity normal
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Clean build
+        run: dotnet clean
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test --no-build --verbosity normal --configuration Release

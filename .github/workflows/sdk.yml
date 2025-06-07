@@ -11,7 +11,18 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        dotnet-version: [8.0.x, 9.0.x]
+        include:
+          - os: ubuntu-latest
+            dotnet-version: 8.0.x
+          - os: ubuntu-latest
+            dotnet-version: 9.0.x
+          - os: windows-latest
+            dotnet-version: net48
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -24,10 +35,16 @@ jobs:
           restore-keys: |
             nuget-${{ runner.os }}-
 
+      - name: Setup .NET
+        if: matrix.os == 'windows-latest' && matrix.dotnet-version == 'net48'
+        run: |
+          echo "Windows runner assumed to have .NET Framework 4.8 installed"
+
       - name: Setup .NET SDK
+        if: matrix.os == 'ubuntu-latest'
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: ${{ matrix.dotnet-version }}
 
       - name: Restore dependencies
         run: dotnet restore
@@ -47,10 +64,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup .NET SDK
+      - name: Setup .NET 8
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 8.0.x
+      
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 9.0.x
 
       - name: Restore dependencies
         run: dotnet restore
