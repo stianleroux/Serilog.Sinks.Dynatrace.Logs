@@ -58,7 +58,7 @@ jobs:
       - name: Get version from .csproj
         id: get_base_version
         run: |
-          BASE_VERSION=$(grep -oPm1 "(?<=<Version>)[^<]+" Results/Results.csproj)
+          BASE_VERSION=$(grep -oPm1 "(?<=<Version>)[^<]+" Serilog.Sinks.Dynatrace.Logs.csproj)
           if echo "$BASE_VERSION" | grep -qi "beta"; then
             SUFFIX="ci$(date +%H%M%S)"
             FULL_VERSION="${BASE_VERSION}-${SUFFIX}"
@@ -72,7 +72,7 @@ jobs:
         run: dotnet build --configuration Release
 
       - name: Pack NuGet package
-        run: dotnet pack Results/Results.csproj --no-build --output ./nuget-packages --configuration Release /p:PackageVersion=${{ env.PACKAGE_VERSION }}
+        run: dotnet pack Serilog.Sinks.Dynatrace.Logs.csproj --no-build --output ./nuget-packages --configuration Release /p:PackageVersion=${{ env.PACKAGE_VERSION }}
 
       - name: Push NuGet package
         run: dotnet nuget push nuget-packages/*.nupkg --skip-duplicate --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
