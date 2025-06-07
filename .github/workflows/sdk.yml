@@ -1,60 +1,142 @@
 name: SDK
-permissions:
-  contents: read
-  pull-requests: write
-  
+
 on:
-    push:
-        branches:
-            - main
-    workflow_dispatch:  
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
-    build:
-        runs-on: ubuntu-latest
-        container:
-          image: mcr.microsoft.com/dotnet/sdk:8.0-alpine
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-        steps:
-            - uses: actions/checkout@v2
-            - name: Setup .NET 8
-              uses: actions/setup-dotnet@v1
-              with:
-                  dotnet-version: 8.0.x
-            - name: Setup .NET 9
-              uses: actions/setup-dotnet@v1
-              with:
-                  dotnet-version: 9.0.x
-            - name: Clean build
-              run: dotnet clean
-            - name: Restore dependencies
-              run: dotnet restore
-            - name: Build
-              run: dotnet build --no-restore
-            - name: Test
-              run: dotnet test --no-build --verbosity normal
+      - name: Cache NuGet packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
 
-    publish:
-        name: build, pack & publish
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v2
-            - uses: actions/setup-dotnet@v1
-              with:
-                  dotnet-version: 8.0.x
-            - name: Setup .NET 8
-              uses: actions/setup-dotnet@v1
-              with:
-                  dotnet-version: 8.0.x
-            - name: Setup .NET 9
-              uses: actions/setup-dotnet@v1
-              with:
-                  dotnet-version: 9.0.x
-            - name: Restore dependencies
-              run: dotnet restore
-            - name: Build
-              run: dotnet build --configuration Release
-            - name: Pack
-              run: dotnet pack Serilog.Sinks.Dynatrace.Logs.csproj --output nuget-packages --configuration Release
-            - name: Push
-              run: dotnet nuget push **/*.nupkg --skip-duplicate --source https://api.nuget.org/v3/index.json --api-key ${{secrets.NUGET_API_KEY}}
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test --no-build --verbosity normal --configuration Release
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_base_version.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Get version from .csproj
+        id: get_base_version
+        run: |
+          BASE_VERSION=$(grep -oPm1 "(?<=<Version>)[^<]+" Results/Results.csproj)
+          if echo "$BASE_VERSION" | grep -qi "beta"; then
+            SUFFIX="ci$(date +%H%M%S)"
+            FULL_VERSION="${BASE_VERSION}-${SUFFIX}"
+          else
+            FULL_VERSION="$BASE_VERSION"
+          fi
+          echo "PACKAGE_VERSION=$FULL_VERSION" >> $GITHUB_ENV
+          echo "version=$FULL_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build
+        run: dotnet build --configuration Release
+
+      - name: Pack NuGet package
+        run: dotnet pack Results/Results.csproj --no-build --output ./nuget-packages --configuration Release /p:PackageVersion=${{ env.PACKAGE_VERSION }}
+
+      - name: Push NuGet package
+        run: dotnet nuget push nuget-packages/*.nupkg --skip-duplicate --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
+
+      - name: Upload NuGet package as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifact
+          path: ./nuget-packages/
+
+  release:
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifact
+          path: ./downloaded-nuget-packages/
+
+      - name: Generate release notes
+        id: notes
+        uses: release-drafter/release-drafter@v5
+        with:
+          config-name: release-drafter.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ needs.publish.outputs.version }}
+          release_name: Release ${{ needs.publish.outputs.version }}
+          body: |
+            ## Changes in this release:
+            - Auto-generated release
+            - Version: ${{ needs.publish.outputs.version }}
+          draft: false
+          prerelease: ${{ contains(needs.publish.outputs.version, '-ci') }}
+
+      - name: Get NuGet file path
+        id: get_filename
+        run: |
+          FILE_NAME=$(find ./downloaded-nuget-packages -name "*.nupkg" | head -n 1)
+          if [ -z "$FILE_NAME" ]; then
+            echo "❌ No .nupkg found"
+            exit 1
+          fi
+          echo "nupkg_path=$FILE_NAME" >> $GITHUB_OUTPUT
+          echo "nupkg_name=$(basename $FILE_NAME)" >> $GITHUB_OUTPUT
+
+      - name: Upload NuGet package to GitHub release
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.get_filename.outputs.nupkg_path }}
+          asset_name: ${{ steps.get_filename.outputs.nupkg_name }}
+          asset_content_type: application/octet-stream
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
